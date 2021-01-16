@@ -17,6 +17,8 @@ Application.registerPlugin(AppLoaderPlugin)
 // Sprite is our image on the stage
 import { Sprite } from '@pixi/sprite'
 
+//import 'pixi.min.js'
+
 // App with width and height of the page
 const app = new Application({
 	width: window.innerWidth,
@@ -24,10 +26,26 @@ const app = new Application({
 })
 document.body.appendChild(app.view) // Create Canvas tag in the body
 
-// Load the logo
-app.loader.add('logo', './assets/logo.png')
+var sprite, cat, state;
+
+var script1=document.createElement('script');//创建script标签节点
+script1.setAttribute('type','text/javascript');//设置script类型
+script1.setAttribute('src','pixi.min');//设置js地址
+document.body.appendChild(script1);//将js追加为body的子标签
+
+//Line
+let line = new PIXI.Graphics();   
+line.lineStyle(4, 0xFFFFFF, 1);
+line.moveTo(0, 0);
+line.lineTo(80, 50);
+line.x = 32;
+line.y = 32;
+app.stage.addChild(line);
+
+// Load the logo 
+app.loader.add('logo', './assets/logo.png').add('cat', "./assets/cat.png")
 app.loader.load(() => {
-	const sprite = Sprite.from('logo')
+	sprite = Sprite.from('logo')
 	sprite.anchor.set(0.5) // We want to rotate our sprite relative to the center, so 0.5
 	app.stage.addChild(sprite)
 
@@ -35,8 +53,156 @@ app.loader.load(() => {
 	sprite.x = app.screen.width * 0.5
 	sprite.y = app.screen.height * 0.5
 
+	// add sprite cat
+	cat = Sprite.from('cat')
+	app.stage.addChild(cat);
+	cat.y = 96;
+	cat.x = 96;
+	cat.vx = 0;
+	cat.vy = 0;
+
+
+	 //Capture the keyboard arrow keys
+	 let left = keyboard(37),
+	 up = keyboard(38),
+	 right = keyboard(39),
+	 down = keyboard(40);
+
+ //Left arrow key `press` method
+ left.press = () => {
+   //Change the cat's velocity when the key is pressed
+   cat.vx = -5;
+   cat.vy = 0;
+ };
+ 
+ //Left arrow key `release` method
+ left.release = () => {
+   //If the left arrow has been released, and the right arrow isn't down,
+   //and the cat isn't moving vertically:
+   //Stop the cat
+   if (!right.isDown && cat.vy === 0) {
+	 cat.vx = 0;
+   }
+ };
+
+ //Up
+ up.press = () => {
+   cat.vy = -5;
+   cat.vx = 0;
+ };
+ up.release = () => {
+   if (!down.isDown && cat.vx === 0) {
+	 cat.vy = 0;
+   }
+ };
+
+ //Right
+ right.press = () => {
+   cat.vx = 5;
+   cat.vy = 0;
+ };
+ right.release = () => {
+   if (!left.isDown && cat.vy === 0) {
+	 cat.vx = 0;
+   }
+ };
+
+ //Down
+ down.press = () => {
+   cat.vy = 5;
+   cat.vx = 0;
+ };
+ down.release = () => {
+   if (!up.isDown && cat.vx === 0) {
+	 cat.vy = 0;
+   }
+ };
+
+ //Set the game state
+ state = play;
+
+ //Start the game loop 
+ app.ticker.add(delta => gameLoop(delta));
+
 	// Put the rotating function into the update loop
-	app.ticker.add(delta => {
-		sprite.rotation += 0.02 * delta
-	})
+	// app.ticker.add(delta => {
+	// 	sprite.rotation += 0.02 * delta
+	// 	//cat.vx = 1;
+	// 	//cat.vy = 1;
+	// 	cat.x += cat.vx;
+	// 	cat.y += cat.vy;
+	// })
 })
+
+function gameLoop(delta){
+
+	//Update the current game state:
+	state(delta);
+  }
+  
+  function play(delta) {
+  
+	// sprite rotate
+	sprite.rotation += 0.02 * delta
+
+	//Use the cat's velocity to make it move
+	cat.x += cat.vx;
+	cat.y += cat.vy
+  }
+  
+  //The `keyboard` helper function
+  function keyboard(keyCode) {
+	var key = {};
+	key.code = keyCode;
+	key.isDown = false;
+	key.isUp = true;
+	key.press = undefined;
+	key.release = undefined;
+	//The `downHandler`
+	key.downHandler = event => {
+	  if (event.keyCode === key.code) {
+		if (key.isUp && key.press) key.press();
+		key.isDown = true;
+		key.isUp = false;
+	  }
+	  event.preventDefault();
+	};
+  
+	//The `upHandler`
+	key.upHandler = event => {
+	  if (event.keyCode === key.code) {
+		if (key.isDown && key.release) key.release();
+		key.isDown = false;
+		key.isUp = true;
+	  }
+	  event.preventDefault();
+	};
+  
+	//Attach event listeners
+	window.addEventListener(
+	  "keydown", key.downHandler.bind(key), false
+	);
+	window.addEventListener(
+	  "keyup", key.upHandler.bind(key), false
+	);
+	return key;
+  }
+
+	// //load the cat 
+	// app.loader.add('cat', "./assets/cat.png")
+	// app.loader.load(setup);
+
+	// let cat;
+
+	// function setup(){
+	// 	cat = Sprite.from('cat');
+	// 	cat.y = 96;
+	// 	app.stage.addChild(cat);
+
+	// 	// start the game loop
+	// 	app.ticker.add(delta => gameLoop(delta));
+	// }
+
+	// function gameLoop(delta){
+	// 	cat.x +=1;
+	// }
