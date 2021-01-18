@@ -17,7 +17,8 @@ Application.registerPlugin(AppLoaderPlugin)
 // Sprite is our image on the stage
 import { Sprite } from '@pixi/sprite'
 
-//import 'pixi.min.js'
+//import Graphics
+import {Graphics} from '@pixi/graphics'
 
 // App with width and height of the page
 const app = new Application({
@@ -28,13 +29,10 @@ document.body.appendChild(app.view) // Create Canvas tag in the body
 
 var sprite, cat, state;
 
-var script1=document.createElement('script');//创建script标签节点
-script1.setAttribute('type','text/javascript');//设置script类型
-script1.setAttribute('src','pixi.min');//设置js地址
-document.body.appendChild(script1);//将js追加为body的子标签
+
 
 //Line
-let line = new PIXI.Graphics();   
+let line = new Graphics();   
 line.lineStyle(4, 0xFFFFFF, 1);
 line.moveTo(0, 0);
 line.lineTo(80, 50);

@@ -21,6 +21,7 @@
   "dependencies": {
     "@pixi/app": "^5.0.4",
     "@pixi/core": "^5.0.4",
+    "@pixi/graphics": "^5.3.7",
     "@pixi/loaders": "^5.0.4",
     "@pixi/sprite": "^5.0.4",
     "@pixi/ticker": "^5.0.4"
