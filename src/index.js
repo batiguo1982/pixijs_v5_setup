@@ -20,10 +20,11 @@ import { Sprite } from '@pixi/sprite'
 //import Graphics
 import {Graphics} from '@pixi/graphics'
 
-// import text and textstyle
-import * as text from '@pixi/text'
+// import Text and Textstyle
+import * as Text from '@pixi/text'
 
-
+// import display
+import {Container} from '@pixi/display'
 
 
 
@@ -32,8 +33,8 @@ const app = new Application({
 	// width: window.innerWidth,
 	// height: window.innerHeight,
 	// backgroundColor: 0xFFF68F
-	width: 256, 
-    height: 256,                       
+	width: 512, 
+    height: 512,                       
     antialiasing: true, 
     transparent: false, 
     resolution: 1
@@ -41,7 +42,8 @@ const app = new Application({
 
 document.body.appendChild(app.view) // Create Canvas tag in the body
 
-var sprite, box, cat, state, message, style, container1;
+var state, explorer, treasure, blobs, chimes, exit, player, dungeon,
+door, healthBar, message, gameScene, gameOverScene, enemies, id;
 
 //Line
 // let line = new Graphics();   
@@ -56,8 +58,7 @@ var sprite, box, cat, state, message, style, container1;
 //app.loader.add('logo', './assets/logo.png').add('cat', "./assets/cat.png")
 
 //Load the Cat Picture
-app.loader.add('cat', "./assets/cat.png");
-app.loader.load(setup);
+app.loader.add("./assets/treasureHunter.json").load(setup);
 
 function setup() {
 	// sprite = Sprite.from('logo')
@@ -66,90 +67,180 @@ function setup() {
 
 	// Position the sprite at the center of the stage
 	// sprite.x = app.screen.width * 0.5
-    // sprite.y = app.screen.height * 0.5
-    
-    // Create sprite box
-	box = new Graphics();
-	box.beginFill(0xCCFF99);
-	box.drawRect(0, 0, 64, 64);
-	box.endFill();
-	box.x = 120;
-	box.y = 96;
-	app.stage.addChild(box);
+	// sprite.y = app.screen.height * 0.5
+	
+	//Make the game scene and add it to the stage
+	gameScene = new Container();
+	app.stage.addChild(gameScene);
 
-	// Create sprite cat
-	cat = new Sprite.from('cat')
-	cat.y = 96;
-	cat.x = 16;
-	cat.vx = 0;
-	cat.vy = 0;
-	app.stage.addChild(cat);
+	//Make the sprites and add them to the `gameScene`
+    //Create an alias for the texture atlas frame ids
+	id = app.loader.resources["./assets/treasureHunter.json"].textures;
+	console.log(id);     // why id is underfine ?
+	
+    //Dungeon
+    dungeon = new Sprite(id["dungeon.png"]);
+    gameScene.addChild(dungeon);
 
-	 //Capture the keyboard arrow keys
-	 let left = keyboard(37),
-	 up = keyboard(38),
-	 right = keyboard(39),
-	 down = keyboard(40);
+	//Door
+	door = new Sprite(id["door.png"]); 
+	door.position.set(32, 0);
+	gameScene.addChild(door);
+
+	//Explorer
+	explorer = new Sprite(id["explorer.png"]);
+	explorer.x = 68;
+	explorer.y = gameScene.height / 2 - explorer.height / 2;
+	explorer.vx = 0;
+	explorer.vy = 0;
+	gameScene.addChild(explorer);
+	
+	//Treasure
+	treasure = new Sprite(id["treasure.png"]);
+	treasure.x = gameScene.width - treasure.width - 48;
+	treasure.y = gameScene.height / 2 - treasure.height / 2;
+	gameScene.addChild(treasure);
+	
+	//Make the blobs
+	let numberOfBlobs = 6,
+	spacing = 48,
+	xOffset = 150,
+	speed = 2,
+	direction = 1;
+
+	//An array to store all the blob monsters
+	blobs = [];
+
+	//Make as many blobs as there are `numberOfBlobs`
+	for (let i = 0; i < numberOfBlobs; i++) {
+
+	//Make a blob
+	let blob = new Sprite(id["blob.png"]);
+
+	//Space each blob horizontally according to the `spacing` value.
+	//`xOffset` determines the point from the left of the screen
+	//at which the first blob should be added
+	let x = spacing * i + xOffset;
+
+	//Give the blob a random y position
+	let y = randomInt(0, app.stage.height - blob.height);
+
+	//Set the blob's position
+	blob.x = x;
+	blob.y = y;
+
+	//Set the blob's vertical velocity. `direction` will be either `1` or
+	//`-1`. `1` means the enemy will move down and `-1` means the blob will
+	//move up. Multiplying `direction` by `speed` determines the blob's
+	//vertical direction
+	blob.vy = speed * direction;
+
+	//Reverse the direction for the next blob
+	direction *= -1;
+
+	//Push the blob into the `blobs` array
+	blobs.push(blob);
+
+	//Add the blob to the `gameScene`
+	gameScene.addChild(blob);
+	}
+
+	//Create the health bar
+    healthBar = new Container();
+	healthBar.position.set(app.stage.width - 170, 4)
+	gameScene.addChild(healthBar);
+
+	//Create the black background rectangle
+	let innerBar = new Graphics();
+	innerBar.beginFill(0x000000);
+	innerBar.drawRect(0, 0, 128, 8);
+	innerBar.endFill();
+	healthBar.addChild(innerBar);
+
+	//Create the front red rectangle
+	let outerBar = new Graphics();
+	outerBar.beginFill(0xFF3300);
+	outerBar.drawRect(0, 0, 128, 8);
+	outerBar.endFill();
+	healthBar.addChild(outerBar);
+
+	healthBar.outer = outerBar;
+
+	//Create the `gameOver` scene
+	gameOverScene = new Container();
+	app.stage.addChild(gameOverScene);
+
+	//Make the `gameOver` scene invisible when the game first starts
+	gameOverScene.visible = false;
+
+	//Create the text sprite and add it to the `gameOver` scene
+	let style = new TextStyle({
+		fontFamily: "Futura",
+		fontSize: 64,
+		fill: "white"
+	});
+	message = new Text("The End!", style);
+	message.x = 120;
+	message.y = app.stage.height / 2 - 32;
+	gameOverScene.addChild(message);
+
+	//Capture the keyboard arrow keys
+	let left = keyboard(37),
+	    up = keyboard(38),
+	    right = keyboard(39),
+	    down = keyboard(40);
 
  	//Left arrow key `press` method
- 	left.press = () => {
-   //Change the cat's velocity when the key is pressed
-   		cat.vx = -5;
-  		cat.vy = 0;
- 	};
- 
- //Left arrow key `release` method
- left.release = () => {
-   //If the left arrow has been released, and the right arrow isn't down,
-   //and the cat isn't moving vertically:
-   //Stop the cat
-   if (!right.isDown && cat.vy === 0) {
-	 cat.vx = 0;
-   }
- };
+	 left.press = function() {
 
- //Up
- up.press = () => {
-   cat.vy = -5;
-   cat.vx = 0;
- };
- up.release = () => {
-   if (!down.isDown && cat.vx === 0) {
-	 cat.vy = 0;
-   }
- };
-
- //Right
- right.press = () => {
-   cat.vx = 5;
-   cat.vy = 0;
- };
- right.release = () => {
-   if (!left.isDown && cat.vy === 0) {
-	 cat.vx = 0;
-   }
- };
-
- //Down
- down.press = () => {
-   cat.vy = 5;
-   cat.vx = 0;
- };
- down.release = () => {
-   if (!up.isDown && cat.vx === 0) {
-	 cat.vy = 0;
-   }
- };
-
- // create textstyle and text object
- style = new text.TextStyle({
-	fontFamily: "sans-serif",
-    fontSize: 18,
-    fill: "white",
-  })
-  message = new text.Text("No collision...", style);
-  message.position.set(8.8);
-  app.stage.addChild(message);
+		//Change the explorer's velocity when the key is pressed
+		explorer.vx = -5;
+		explorer.vy = 0;
+	  };
+	
+	  //Left arrow key `release` method
+	  left.release = function() {
+	
+		//If the left arrow has been released, and the right arrow isn't down,
+		//and the explorer isn't moving vertically:
+		//Stop the explorer
+		if (!right.isDown && explorer.vy === 0) {
+		  explorer.vx = 0;
+		}
+	  };
+	
+	  //Up
+	  up.press = function() {
+		explorer.vy = -5;
+		explorer.vx = 0;
+	  };
+	  up.release = function() {
+		if (!down.isDown && explorer.vx === 0) {
+		  explorer.vy = 0;
+		}
+	  };
+	
+	  //Right
+	  right.press = function() {
+		explorer.vx = 5;
+		explorer.vy = 0;
+	  };
+	  right.release = function() {
+		if (!left.isDown && explorer.vy === 0) {
+		  explorer.vx = 0;
+		}
+	  };
+	
+	  //Down
+	  down.press = function() {
+		explorer.vy = 5;
+		explorer.vx = 0;
+	  };
+	  down.release = function() {
+		if (!up.isDown && explorer.vx === 0) {
+		  explorer.vy = 0;
+		}
+	  };
 
  
  //Set the game state
@@ -158,50 +249,129 @@ function setup() {
  //Start the game loop 
  app.ticker.add(delta => gameLoop(delta));
 
-	// Put the rotating function into the update loop
-	// app.ticker.add(delta => {
-	// 	sprite.rotation += 0.02 * delta
-	// 	//cat.vx = 1;
-	// 	//cat.vy = 1;
-	// 	cat.x += cat.vx;
-	// 	cat.y += cat.vy;
-	// })
+	
 };
 
 function gameLoop(delta){
 
 	//Update the current game state:
 	state(delta);
-  }
-  
-  function play(delta) {
-  
-	//use the cat's velocity to make it move
-	cat.x += cat.vx/4;
-	cat.y += cat.vy/4;
-  
-	//check for a collision between the cat and the box
-	if (hitTestRectangle(cat, box)) {
-  
-	  //if there's a collision, change the message text
-	  //and tint the box red
-	  message.text = "hit!";
-	  box.tint = 0xff3300;
+}
+	
+function play(delta) {
+
+	//use the explorer's velocity to make it move
+	explorer.x += explorer.vx;
+	explorer.y += explorer.vy;
+
+	//Contain the explorer inside the area of the dungeon
+	contain(explorer, {x: 28, y: 10, width: 488, height: 480});
+	//contain(explorer, stage);
+
+	//Set `explorerHit` to `false` before checking for a collision
+	let explorerHit = false;
+
+	//Loop through all the sprites in the `enemies` array
+	blobs.forEach(function(blob) {
+
+		//Move the blob
+		blob.y += blob.vy;
+
+		//Check the blob's screen boundaries
+		let blobHitsWall = contain(blob, {x: 28, y: 10, width: 488, height: 480});
+
+		//If the blob hits the top or bottom of the stage, reverse
+		//its direction
+		if (blobHitsWall === "top" || blobHitsWall === "bottom") {
+		blob.vy *= -1;
+		}
+
+		//Test for a collision. If any of the enemies are touching
+		//the explorer, set `explorerHit` to `true`
+		if(hitTestRectangle(explorer, blob)) {
+		explorerHit = true;
+		}
+	});
+
+	//If the explorer is hit...
+	if(explorerHit) {
+
+		//Make the explorer semi-transparent
+		explorer.alpha = 0.5;
+
+		//Reduce the width of the health bar's inner rectangle by 1 pixel
+		healthBar.outer.width -= 1;
+
 	} else {
-  
-	  //if there's no collision, reset the message
-	  //text and the box's color
-	  message.text = "No collision...";
-	  box.tint = 0xccff99;
+
+		//Make the explorer fully opaque (non-transparent) if it hasn't been hit
+		explorer.alpha = 1;
 	}
 
-	// sprite rotate
-	// sprite.rotation += 0.02 * delta
+	//Check for a collision between the explorer and the treasure
+	if (hitTestRectangle(explorer, treasure)) {
 
-	//Use the cat's velocity to make it move
-	// cat.x += cat.vx;
-	// cat.y += cat.vy
-  }
+		//If the treasure is touching the explorer, center it over the explorer
+		treasure.x = explorer.x + 8;
+		treasure.y = explorer.y + 8;
+	}
+
+	//Does the explorer have enough health? If the width of the `innerBar`
+	//is less than zero, end the game and display "You lost!"
+	if (healthBar.outer.width < 0) {
+		state = end;
+		message.text = "You lost!";
+	}
+
+	//If the explorer has brought the treasure to the exit,
+	//end the game and display "You won!"
+	if (hitTestRectangle(treasure, door)) {
+		state = end;
+		message.text = "You won!";
+	} 
+
+}
+
+function end() {
+	gameScene.visible = false;
+	gameOverScene.visible = true;
+}
+
+/* Helper functions */
+
+/* Contain function, help to test if sprite is in the container*/
+function contain(sprite, container) {
+
+	let collision = undefined;
+  
+	//Left
+	if (sprite.x < container.x) {
+	  sprite.x = container.x;
+	  collision = "left";
+	}
+  
+	//Top
+	if (sprite.y < container.y) {
+	  sprite.y = container.y;
+	  collision = "top";
+	}
+  
+	//Right
+	if (sprite.x + sprite.width > container.width) {
+	  sprite.x = container.width - sprite.width;
+	  collision = "right";
+	}
+  
+	//Bottom
+	if (sprite.y + sprite.height > container.height) {
+	  sprite.y = container.height - sprite.height;
+	  collision = "bottom";
+	}
+  
+	//Return the `collision` value
+	return collision;
+}
+
   
   //The `hitTestRectangle` function
 function hitTestRectangle(r1, r2) {
@@ -254,6 +424,11 @@ function hitTestRectangle(r1, r2) {
 	//`hit` will be either `true` or `false`
 	return hit;
   };
+
+  //The `randomInt` helper function
+   function randomInt(min, max) {
+	  return Math.floor(Math.random() * (max - min + 1)) + min;
+   }
 
   //The `keyboard` helper function
   function keyboard(keyCode) {
