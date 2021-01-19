@@ -23,7 +23,8 @@ import {Graphics} from '@pixi/graphics'
 // import text and textstyle
 import * as text from '@pixi/text'
 
-
+// import display
+import {Container} from '@pixi/display'
 
 
 
@@ -41,7 +42,7 @@ const app = new Application({
 
 document.body.appendChild(app.view) // Create Canvas tag in the body
 
-var sprite, box, cat, state, message, style, container1;
+var sprite, box, cat, state, message, style, healthBar;
 
 //Line
 // let line = new Graphics();   
@@ -68,19 +69,23 @@ function setup() {
 	// sprite.x = app.screen.width * 0.5
     // sprite.y = app.screen.height * 0.5
     
-    // Create sprite box
+    healthBar = new Container();
+    container1.position.set(20, 4)
+    app.stage.addChild(healthBar);
+
+	// Create sprite box
 	box = new Graphics();
 	box.beginFill(0xCCFF99);
 	box.drawRect(0, 0, 64, 64);
 	box.endFill();
-	box.x = 120;
-	box.y = 96;
-	app.stage.addChild(box);
+	//box.x = 120;
+	//box.y = 96;
+	container1.addChild(box);
 
 	// Create sprite cat
 	cat = new Sprite.from('cat')
-	cat.y = 96;
-	cat.x = 16;
+	cat.y = 16;
+	cat.x = 96;
 	cat.vx = 0;
 	cat.vy = 0;
 	app.stage.addChild(cat);
