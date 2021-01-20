@@ -11,6 +11,10 @@ import { TickerPlugin } from '@pixi/ticker' // TickerPlugin is the plugin for ru
 Application.registerPlugin(TickerPlugin)
 
 // And just for convenience let's register Loader plugin in order to use it right from Application instance like app.loader.add(..) etc.
+import { SpritesheetLoader } from '@pixi/spritesheet'
+import { Loader } from '@pixi/loaders'
+Loader.registerPlugin(SpritesheetLoader)
+
 import { AppLoaderPlugin } from '@pixi/loaders'
 Application.registerPlugin(AppLoaderPlugin)
 

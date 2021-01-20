@@ -25,6 +25,7 @@
     "@pixi/graphics": "^5.3.7",
     "@pixi/loaders": "^5.3.7",
     "@pixi/sprite": "^5.3.7",
+    "@pixi/spritesheet": "^5.3.7",
     "@pixi/text": "^5.3.7",
     "@pixi/ticker": "^5.3.7"
   }
